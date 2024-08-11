@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Magnetometer Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #007BFF;
+        }
+        #magneticField {
+            margin-top: 20px;
+            font-size: 24px;
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .alert {
+            color: #ff0000;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Magnetometer Data</h1>
+    <div id="magneticField">Waiting for data...</div>
+    <div id="alertMessage" class="alert"></div>
+
+    <script>
+        var previousAlpha = null;
+        var previousBeta = null;
+        var previousGamma = null;
+
+        // Define thresholds based on your experiments
+        var thresholds = {
+            'Gold': {alpha: 15, beta: 15, gamma: 15},
+            'Silver': {alpha: 10, beta: 10, gamma: 10},
+            'Copper': {alpha: 8, beta: 8, gamma: 8},
+            'Iron': {alpha: 20, beta: 20, gamma: 20}
+        };
+
+        function identifyMetal(alpha, beta, gamma) {
+            var metalType = 'Unknown';
+
+            for (var metal in thresholds) {
+                var thres = thresholds[metal];
+                if (Math.abs(alpha) > thres.alpha || Math.abs(beta) > thres.beta || Math.abs(gamma) > thres.gamma) {
+                    metalType = metal;
+                    break;
+                }
+            }
+
+            return metalType;
+        }
+
+        function handleOrientation(event) {
+            var alpha = event.alpha;
+            var beta = event.beta;
+            var gamma = event.gamma;
+
+            var alertMessage = '';
+
+            if (alpha === null || beta === null || gamma === null) {
+                document.getElementById('magneticField').innerText =
+                    'Sensors not available.';
+            } else {
+                document.getElementById('magneticField').innerText =
+                    'Alpha: ' + alpha.toFixed(2) + '\n' +
+                    'Beta: ' + beta.toFixed(2) + '\n' +
+                    'Gamma: ' + gamma.toFixed(2);
+
+                var metalType = identifyMetal(alpha, beta, gamma);
+                alertMessage = metalType === 'Unknown' ? 'No specific metal detected.' : 'Detected Metal: ' + metalType;
+
+                document.getElementById('alertMessage').innerText = alertMessage;
+
+                // Update previous values
+                previousAlpha = alpha;
+                previousBeta = beta;
+                previousGamma = gamma;
+
+                // Send data to PHP server
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "server.php", true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.send("alpha=" + alpha + "&beta=" + beta + "&gamma=" + gamma);
+            }
+        }
+
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        } else {
+            document.getElementById('magneticField').innerText = 'Device Orientation API not supported.';
+        }
+    </script>
+</body>
+</html>
